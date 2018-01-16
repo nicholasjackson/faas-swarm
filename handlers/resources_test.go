@@ -1,9 +1,7 @@
-package tests
+package handlers
 
 import (
 	"testing"
-
-	"github.com/openfaas/faas-swarm/handlers"
 )
 
 // Test_ParseMemory exploratory testing to document how to convert
@@ -11,7 +9,7 @@ import (
 func Test_ParseMemory(t *testing.T) {
 	value := "512 m"
 
-	val, err := handlers.ParseMemory(value)
+	val, err := parseMemory(value)
 	if err != nil {
 		t.Error(err)
 	}

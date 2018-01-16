@@ -198,8 +198,17 @@ func userPasswordFromBasicAuth(basicAuthB64 string) (string, string, error) {
 	return cs[:s], cs[s+1:], nil
 }
 
-func ParseMemory(value string) (int64, error) {
+func parseMemory(value string) (int64, error) {
 	return units.RAMInBytes(value)
+}
+
+func parseCPU(value string) (int64, error) {
+	v, err := strconv.ParseInt(value, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return v, nil
 }
 
 func buildResources(request *requests.CreateFunctionRequest) *swarm.ResourceRequirements {
@@ -209,18 +218,24 @@ func buildResources(request *requests.CreateFunctionRequest) *swarm.ResourceRequ
 
 		resources = &swarm.ResourceRequirements{}
 		if request.Limits != nil {
-			memoryBytes, err := ParseMemory(request.Limits.Memory)
+			memoryBytes, err := parseMemory(request.Limits.Memory)
 			if err != nil {
 				log.Printf("Error parsing memory limit: %T", err)
 			}
 
+			nanoCPUs, err := parseCPU(request.Limits.CPU)
+			if err != nil {
+				log.Printf("Error parsing cpu limit: %T", err)
+			}
+
 			resources.Limits = &swarm.Resources{
 				MemoryBytes: memoryBytes,
+				NanoCPUs:    nanoCPUs,
 			}
 		}
 
 		if request.Requests != nil {
-			memoryBytes, err := ParseMemory(request.Requests.Memory)
+			memoryBytes, err := parseMemory(request.Requests.Memory)
 			if err != nil {
 				log.Printf("Error parsing memory request: %T", err)
 			}
@@ -229,6 +244,15 @@ func buildResources(request *requests.CreateFunctionRequest) *swarm.ResourceRequ
 				MemoryBytes: memoryBytes,
 			}
 
+			nanoCPUs, err := parseCPU(request.Requests.CPU)
+			if err != nil {
+				log.Printf("Error parsing cpu limit: %T", err)
+			}
+
+			resources.Reservations = &swarm.Resources{
+				MemoryBytes: memoryBytes,
+				NanoCPUs:    nanoCPUs,
+			}
 		}
 	}
 	return resources
